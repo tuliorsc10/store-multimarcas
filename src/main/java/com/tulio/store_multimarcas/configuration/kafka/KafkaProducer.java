@@ -1,7 +1,10 @@
 package com.tulio.store_multimarcas.configuration.kafka;
 
+import com.seuprojeto.common.consumer.dto.MessageWrapper;
+import com.tulio.store_multimarcas.configuration.MessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -14,12 +17,13 @@ import java.util.concurrent.TimeoutException;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class KafkaProducer {
+@ConditionalOnProperty(name = "messaging.type", havingValue = "kafka")
+public class KafkaProducer implements MessageProducer<Object> {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void sendMessageWithCallback(String topic, String message) {
-        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(topic, message);
+    public void sendMessageWithCallback(String topic, Object message) {
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, message);
 
         future.whenComplete((result, ex) -> {
             if (ex == null) {
@@ -31,22 +35,20 @@ public class KafkaProducer {
         });
     }
 
-    public boolean sendSync(String topic, String message) {
+    @Override
+    public void send(String destination, MessageWrapper<Object> message) {
         try {
-            SendResult<String, String> result = kafkaTemplate.send(topic, message)
+            SendResult<String, Object> result = kafkaTemplate.send(destination, message)
                     .get(30, TimeUnit.SECONDS);
 
             log.info("Message confirmed. Offset: {}", result.getRecordMetadata().offset());
-            return true;
 
         } catch (TimeoutException e) {
             log.error("Timeout while sending message", e);
-            return false;
 
         } catch (InterruptedException | ExecutionException e) {
             log.error("Error sending message", e);
             Thread.currentThread().interrupt();
-            return false;
         }
     }
 }

@@ -21,17 +21,26 @@ spring:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       retries: 3
       properties:
         request.timeout.ms: 30000
         delivery.timeout.ms: 45000
     properties:
       security.protocol: PLAINTEXT
-      reconnect.backoff.ms: 1000
-      reconnect.backoff.max.ms: 10000
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username:
+    password:
 
   logging:
     level:
       org.apache.kafka: WARN
       org.springframework.kafka: DEBUG
+
+messaging:
+  type: rabbitmq
+  rabbit:
+    exchange: minhaexchange
