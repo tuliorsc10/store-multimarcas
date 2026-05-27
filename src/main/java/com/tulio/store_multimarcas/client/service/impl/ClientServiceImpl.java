@@ -1,16 +1,11 @@
 package com.tulio.store_multimarcas.client.service.impl;
 
-import com.seuprojeto.common.consumer.RabbitQueuesEnum;
 import com.seuprojeto.common.consumer.dto.MessageWrapper;
 import com.tulio.store_multimarcas.client.dto.*;
 import com.tulio.store_multimarcas.client.mapper.ClientMapper;
 import com.tulio.store_multimarcas.client.repository.ClientRepository;
 import com.tulio.store_multimarcas.client.service.ClientService;
-import com.tulio.store_multimarcas.client.util.validate.ValidateCnpj;
 import com.tulio.store_multimarcas.configuration.MessageProducer;
-import com.tulio.store_multimarcas.configuration.MessageProperties;
-import com.tulio.store_multimarcas.configuration.kafka.KafkaProducer;
-import com.tulio.store_multimarcas.configuration.rabbitmq.RabbitMqProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -43,10 +38,8 @@ public class ClientServiceImpl implements ClientService {
     }
 
     private void validateDocument(CreateClientRequestDTO request) {
-        MessageWrapper<Object> wrapper = MessageWrapper.builder().payload("61414844000173").build();
-        if (ValidateCnpj.validar(request.getDocument())) {
-            messageProducer.send("VALIDATE_CNPJ_RECEITA_FEDERAL", wrapper);
-        }
+        MessageWrapper<Object> wrapper = MessageWrapper.builder().payload(request.getDocument()).build();
+        messageProducer.send("VALIDATE_CNPJ_RECEITA_FEDERAL", wrapper);
     }
 
     @Override

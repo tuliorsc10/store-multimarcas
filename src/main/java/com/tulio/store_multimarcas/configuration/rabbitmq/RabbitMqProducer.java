@@ -1,6 +1,6 @@
 package com.tulio.store_multimarcas.configuration.rabbitmq;
 
-import com.seuprojeto.common.consumer.RabbitQueuesEnum;
+import com.seuprojeto.common.consumer.TopicEnum;
 import com.seuprojeto.common.consumer.dto.MessageWrapper;
 import com.tulio.store_multimarcas.configuration.MessageProducer;
 import com.tulio.store_multimarcas.configuration.MessageProperties;
@@ -24,7 +24,7 @@ public class RabbitMqProducer implements MessageProducer<Object> {
     public void send(String destination, MessageWrapper<Object> message) {
         rabbitTemplate.convertAndSend(
                 messageProperties.getRabbit().getExchange(),
-                RabbitQueuesEnum.getRoutingKey(destination),
+                TopicEnum.getRoutingKey(destination),
                 message
         );
     }
