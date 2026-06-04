@@ -20,7 +20,7 @@ public class ClientController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RetrieveClientDTO> retrieveClientById(@PathVariable Long id) {
+    public ResponseEntity<RetrieveClientDTO> retrieveClientById(@PathVariable String id) {
         return ResponseEntity.ok(clientService.retrieveClientById(id));
     }
 

@@ -7,7 +7,7 @@ public interface ClientService {
 
     CreateClientReponseDTO createClient(CreateClientRequestDTO request);
 
-    RetrieveClientDTO retrieveClientById(Long id);
+    RetrieveClientDTO retrieveClientById(String id);
 
     void deleteClientById(Long id);
 

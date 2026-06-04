@@ -1,15 +1,26 @@
 package com.tulio.store_multimarcas.configuration.kafka;
 
+import com.seuprojeto.common.consumer.TopicEnum;
 import com.seuprojeto.common.consumer.dto.MessageWrapper;
 import com.tulio.store_multimarcas.configuration.MessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
+import org.springframework.kafka.requestreply.RequestReplyFuture;
+import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CompletableFuture;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -21,19 +32,7 @@ import java.util.concurrent.TimeoutException;
 public class KafkaProducer implements MessageProducer<Object> {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
-
-    public void sendMessageWithCallback(String topic, Object message) {
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, message);
-
-        future.whenComplete((result, ex) -> {
-            if (ex == null) {
-                log.info("Message sent successfully to topic: {} | Offset: {}",
-                        topic, result.getRecordMetadata().offset());
-            } else {
-                log.error("Failed to send message to topic: {}", topic, ex);
-            }
-        });
-    }
+    private final ReplyingKafkaTemplate<String, Object, Object> replyingKafkaTemplate;
 
     @Override
     public void send(String destination, MessageWrapper<Object> message) {
@@ -51,4 +50,34 @@ public class KafkaProducer implements MessageProducer<Object> {
             Thread.currentThread().interrupt();
         }
     }
+
+        public ConsumerRecord<String, Object> sendAndReply(
+                String destination,
+                Object message) {
+
+            ProducerRecord<String, Object> record =
+                    new ProducerRecord<>(destination, message);
+
+            record.headers().add(
+                    KafkaHeaders.REPLY_TOPIC,
+                    (destination + "_REPLY").getBytes(StandardCharsets.UTF_8));
+
+            try {
+
+                RequestReplyFuture<String, Object, Object> future =
+                        replyingKafkaTemplate.sendAndReceive(record);
+
+                return future.get(10, TimeUnit.SECONDS);
+
+            } catch (TimeoutException e) {
+
+                throw new RuntimeException(
+                        "Timeout aguardando resposta do Kafka", e);
+
+            } catch (Exception e) {
+
+                throw new RuntimeException(
+                        "Erro ao executar request/reply", e);
+            }
+        }
 }

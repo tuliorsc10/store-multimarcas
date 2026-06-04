@@ -8,9 +8,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
@@ -50,5 +54,23 @@ public class KafkaConfig {
                 .partitions(1)
                 .replicas(1)
                 .build();
+    }
+
+    @Bean
+    public ReplyingKafkaTemplate<String, Object, Object> replyingKafkaTemplate(
+            ProducerFactory<String, Object> pf,
+            ConcurrentMessageListenerContainer<String, Object> repliesContainer) {
+
+        return new ReplyingKafkaTemplate<>(pf, repliesContainer);
+    }
+
+    @Bean
+    public ConcurrentMessageListenerContainer<String, Object> repliesContainer(
+            ConsumerFactory<String, Object> cf) {
+
+        ContainerProperties containerProperties =
+                new ContainerProperties(TopicEnum.GET_VALIDATE_CNPJ.getTopic() + "_REPLY");
+
+        return new ConcurrentMessageListenerContainer<>(cf, containerProperties);
     }
 }

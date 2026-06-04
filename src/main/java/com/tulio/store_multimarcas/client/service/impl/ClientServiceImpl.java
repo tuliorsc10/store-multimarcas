@@ -1,17 +1,23 @@
 package com.tulio.store_multimarcas.client.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.seuprojeto.common.consumer.TopicEnum;
 import com.seuprojeto.common.consumer.dto.MessageWrapper;
+import com.seuprojeto.common.reply.dto.CompanyResponseDTO;
 import com.tulio.store_multimarcas.client.dto.*;
 import com.tulio.store_multimarcas.client.mapper.ClientMapper;
 import com.tulio.store_multimarcas.client.repository.ClientRepository;
 import com.tulio.store_multimarcas.client.service.ClientService;
 import com.tulio.store_multimarcas.configuration.MessageProducer;
+import com.tulio.store_multimarcas.configuration.kafka.KafkaProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +27,9 @@ public class ClientServiceImpl implements ClientService {
     private final ClientRepository clientRepository;
     private final ClientMapper clientMapper;
     private final MessageProducer messageProducer;
+    private final KafkaProducer kafkaProducer;
+    private final ObjectMapper objectMapper;
+
 
     @Override
     public CreateClientReponseDTO createClient(CreateClientRequestDTO request) {
@@ -43,10 +52,20 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public RetrieveClientDTO retrieveClientById(Long id) {
-        Optional<ClientEntity> clientFound = clientRepository.findById(id);
+    public RetrieveClientDTO retrieveClientById(String id) {
+        Optional<ClientEntity> clientFound = clientRepository.findByClientId(UUID.fromString(id));
         ClientEntity clientEntity = clientFound.orElseThrow(() -> new RuntimeException("Client with Id " + id + " not found!"));
-        return clientMapper.toRetrieveClient(clientEntity);
+        ConsumerRecord<String, Object> response = kafkaProducer.sendAndReply(TopicEnum.GET_VALIDATE_CNPJ.name(), clientFound.get().getDocumentCpf());
+        try {
+            CompanyResponseDTO message =
+                    objectMapper.readValue(
+                            response.value().toString(),
+                            CompanyResponseDTO.class
+                    );
+            return clientMapper.toRetrieveClient(clientEntity, message);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao desserializar");
+        }
     }
 
     @Override

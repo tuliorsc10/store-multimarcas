@@ -30,6 +30,8 @@ spring:
         delivery.timeout.ms: 45000
     properties:
       security.protocol: PLAINTEXT
+    consumer:
+      group-id: store-multimarcas
 
   rabbitmq:
     host: localhost

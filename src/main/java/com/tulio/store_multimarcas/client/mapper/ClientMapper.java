@@ -1,5 +1,6 @@
 package com.tulio.store_multimarcas.client.mapper;
 
+import com.seuprojeto.common.reply.dto.CompanyResponseDTO;
 import com.tulio.store_multimarcas.client.dto.*;
 import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
@@ -28,7 +29,8 @@ public interface ClientMapper {
     @Mapping(source = "complement", target = "address.complement")
     CreateClientReponseDTO toCreateClientResponse(ClientEntity entity);
 
-    RetrieveClientDTO toRetrieveClient(ClientEntity entity);
+    @Mapping(target = "email", source = "entity.email")
+    RetrieveClientDTO toRetrieveClient(ClientEntity entity, CompanyResponseDTO companyResponse);
 
     UpdateClientResponseDTO toUpdateClientResponse(ClientEntity entity);
 }
